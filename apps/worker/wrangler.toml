@@ -1,0 +1,11 @@
+name = "crossstream-arena-api"
+main = "src/index.ts"
+compatibility_date = "2025-02-14"
+
+[[durable_objects.bindings]]
+name = "MATCHES"
+class_name = "MatchRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MatchRoom"]
