@@ -1,12 +1,12 @@
 export type Mode='duel'|'ffa3'|'ffa4'|'teams2v2';
 export type Member={id:string;displayName:string;platform:'twitch'|'kick';joinedAt:number};
 export type Player={id:string;x:number;y:number;vx:number;vy:number;alive:boolean;grounded:boolean};
-export type Snapshot={phase:'lobby'|'playing'|'finished';tick:number;players:Player[];tiles:number[];winner:string|null;remaining:number};
+export type Snapshot={phase:'lobby'|'playing'|'finished';tick:number;players:Player[];tiles:number[];winner:string|null;remaining:number;winningTeam:number|null};
 export const CAPACITY:Record<Mode,number>={duel:2,ffa3:3,ffa4:4,teams2v2:4};
 export const COLS=10,ROWS=5,WIDTH=720,HEIGHT=420;
-export function initialSnapshot(members:Member[]):Snapshot{return{phase:'lobby',tick:0,players:members.map((m,i)=>({id:m.id,x:80+i*150,y:60,vx:0,vy:0,alive:true,grounded:false})),tiles:Array(COLS*ROWS).fill(1),winner:null,remaining:60};}
+export function initialSnapshot(members:Member[]):Snapshot{return{phase:'lobby',tick:0,players:members.map((m,i)=>({id:m.id,x:80+i*150,y:60,vx:0,vy:0,alive:true,grounded:false})),tiles:Array(COLS*ROWS).fill(1),winner:null,remaining:60,winningTeam:null};}
 export type Input={left:boolean;right:boolean;jump:boolean};
-export function step(snapshot:Snapshot,inputs:Record<string,Input>):Snapshot{
+export function step(snapshot:Snapshot,inputs:Record<string,Input>,mode:Mode='duel'):Snapshot{
  if(snapshot.phase!=='playing')return snapshot;
  const next:Snapshot={...snapshot,tick:snapshot.tick+1,tiles:[...snapshot.tiles],players:snapshot.players.map(p=>({...p}))};
  next.remaining=Math.max(0,60-next.tick/30);
@@ -26,6 +26,6 @@ export function step(snapshot:Snapshot,inputs:Record<string,Input>):Snapshot{
  }
  if(next.tick%12===0){const index=(Math.floor(next.tick/12)*17)%next.tiles.length;next.tiles[index]=Math.max(0,next.tiles[index]-.18)}
  const alive=next.players.filter(p=>p.alive);
- if(next.players.length>=2&&(alive.length<=1||next.remaining===0)){next.phase='finished';next.winner=alive.length===1?alive[0].id:null;}
+ if(mode==='teams2v2'&&next.players.length===4){const survivingTeams=new Set(alive.map(p=>next.players.findIndex(x=>x.id===p.id)%2));if(survivingTeams.size<=1||next.remaining===0){next.phase='finished';next.winningTeam=survivingTeams.size===1?[...survivingTeams][0]:null;next.winner=null;}}else if(next.players.length>=2&&(alive.length<=1||next.remaining===0)){next.phase='finished';next.winner=alive.length===1?alive[0].id:null;}
  return next;
 }
