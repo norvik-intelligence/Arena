@@ -24,7 +24,7 @@ app.post('/api/demo/lobbies/:id/join', async c => {
  return c.env.MATCHES.get(c.env.MATCHES.idFromName(id)).fetch(new Request('https://match.internal/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(await c.req.json().catch(()=>({}))) }));
 });
 app.post('/api/demo/lobbies/:id/start', async c => {const id=c.req.param('id');if(!/^[a-f0-9-]{36}$/i.test(id))return c.json({error:'invalid_id'},400);return c.env.MATCHES.get(c.env.MATCHES.idFromName(id)).fetch(new Request('https://match.internal/start',{method:'POST',headers:{Authorization:c.req.header('Authorization')??''}}));});
-app.get('/api/demo/lobbies/:id/ws', c=>{const id=c.req.param('id');if(!/^[a-f0-9-]{36}$/i.test(id))return c.json({error:'invalid_id'},400);return c.env.MATCHES.get(c.env.MATCHES.idFromName(id)).fetch(c.req.raw);});
+app.get('/api/demo/lobbies/:id/ws', c=>{const id=c.req.param('id');if(!/^[a-f0-9-]{36}$/i.test(id))return c.json({error:'invalid_id'},400);const url=new URL(c.req.url);url.pathname='/ws';return c.env.MATCHES.get(c.env.MATCHES.idFromName(id)).fetch(new Request(url.toString(),c.req.raw));});
 app.all('/api/oauth/*', c=>c.json({error:'oauth_not_configured'},501));
 app.all('/api/webhooks/*', c=>c.json({error:'signature_verification_not_configured'},501));
 export default app;
