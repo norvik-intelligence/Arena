@@ -14,3 +14,7 @@ This is a **development-only** demonstration. Identity is self-declared, and the
 
 ## Production TODO
 OAuth, origin allowlist, signed join tokens, ticket rotation, spectator permissions, reconnect and disconnect handling, idle room expiry, tick scheduling and persistence strategy, anti-abuse, load tests and observability.
+
+## OBS spectator prototype
+
+Create a demo lobby and copy the **OBS spectator browser source** URL. Add it in OBS as a Browser Source at 1280 × 720 (or use a custom canvas size). The URL uses `?overlay=<lobby UUID>` and contains no creator ticket. The current spectator polls the public lobby state every 250 ms; it is not an optimized production transport and should be replaced with an authenticated, read-only broadcast feed. Because the lobby is publicly addressable by UUID, do not put private information in its public state. The view is intended for development, not for production monetized streams.
