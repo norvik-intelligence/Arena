@@ -8,7 +8,7 @@ export class MatchRoom implements DurableObject {
  private async getLobby(){return this.state.storage.get<Lobby>('lobby')}
  private broadcast(payload:unknown){const data=JSON.stringify(payload);for(const socket of this.sockets.keys())try{socket.send(data)}catch{this.sockets.delete(socket)}}
  private ensureTick(){if(this.timer!==undefined)return;this.timer=setInterval(()=>{void this.tick().catch(()=>this.stopTick())},1000/30) as unknown as number}
- private async tick(){if(this.ticking)return;this.ticking=true;try{const lobby=await this.getLobby();if(!lobby||lobby.snapshot.phase!=='playing'){this.stopTick();return}lobby.snapshot=step(lobby.snapshot,this.inputs);await this.state.storage.put('lobby',lobby);this.broadcast({type:'snapshot',state:lobby.snapshot});if(lobby.snapshot.phase==='finished')this.stopTick()}finally{this.ticking=false}}
+ private async tick(){if(this.ticking)return;this.ticking=true;try{const lobby=await this.getLobby();if(!lobby||lobby.snapshot.phase!=='playing'){this.stopTick();return}lobby.snapshot=step(lobby.snapshot,this.inputs,lobby.mode);await this.state.storage.put('lobby',lobby);this.broadcast({type:'snapshot',state:lobby.snapshot});if(lobby.snapshot.phase==='finished')this.stopTick()}finally{this.ticking=false}}
  private stopTick(){if(this.timer!==undefined){clearInterval(this.timer);this.timer=undefined}}
  async fetch(req:Request):Promise<Response>{
   const path=new URL(req.url).pathname;
@@ -34,7 +34,7 @@ export class MatchRoom implements DurableObject {
   }
   if(path==='/start'&&req.method==='POST'){
    const auth=req.headers.get('Authorization');if(auth!=='Bearer '+lobby.ownerToken)return json({error:'unauthorized'},401);
-   if(lobby.snapshot.phase!=='lobby'||lobby.members.length<2)return json({error:'not_ready'},409);
+   if(lobby.snapshot.phase!=='lobby'||(lobby.members.length<2||(lobby.mode==='teams2v2'&&lobby.members.length!==4)))return json({error:'not_ready'},409);
    lobby.snapshot=initialSnapshot(lobby.members);lobby.snapshot.phase='playing';
    await this.state.storage.put('lobby',lobby);this.broadcast({type:'snapshot',state:lobby.snapshot});this.ensureTick();return json({ok:true});
   }
