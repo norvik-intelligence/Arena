@@ -26,6 +26,6 @@ export function step(snapshot:Snapshot,inputs:Record<string,Input>):Snapshot{
  }
  if(next.tick%12===0){const index=(Math.floor(next.tick/12)*17)%next.tiles.length;next.tiles[index]=Math.max(0,next.tiles[index]-.18)}
  const alive=next.players.filter(p=>p.alive);
- if(alive.length<=1||next.remaining===0){next.phase='finished';next.winner=alive.length===1?alive[0].id:null;}
+ if(next.players.length>=2&&(alive.length<=1||next.remaining===0)){next.phase='finished';next.winner=alive.length===1?alive[0].id:null;}
  return next;
 }
