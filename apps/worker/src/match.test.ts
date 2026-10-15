@@ -8,5 +8,7 @@ describe('match rules',()=>{
  it('moves only the selected player',()=>{const state=initialSnapshot(members);state.phase='playing';const next=step(state,{'0':{left:false,right:true,jump:false}});expect(next.players[0].x).toBeGreaterThan(state.players[0].x);expect(next.players[1].x).toBe(state.players[1].x);expect(state.tick).toBe(0)});
  it('does not finish immediately with two living players',()=>{const state=initialSnapshot(members.slice(0,2));state.phase='playing';expect(step(state,{}).phase).toBe('playing')});
  it('finishes when one player survives',()=>{const state=initialSnapshot(members.slice(0,2));state.phase='playing';state.players[1].alive=false;const next=step(state,{});expect(next.phase).toBe('finished');expect(next.winner).toBe('0')});
+ it('keeps a 2v2 match running with both teams alive',()=>{const state=initialSnapshot(members);state.phase='playing';state.players[0].alive=false;expect(step(state,{},'teams2v2').phase).toBe('playing')});
+ it('declares a team winner in 2v2',()=>{const state=initialSnapshot(members);state.phase='playing';state.players[1].alive=false;state.players[3].alive=false;const result=step(state,{},'teams2v2');expect(result.phase).toBe('finished');expect(result.winningTeam).toBe(0)});
  it('never lets players leave horizontal bounds',()=>{const state=initialSnapshot(members.slice(0,2));state.phase='playing';state.players[0].x=719;const next=step(state,{'0':{left:false,right:true,jump:false}});expect(next.players[0].x).toBeLessThanOrEqual(708)});
 });
