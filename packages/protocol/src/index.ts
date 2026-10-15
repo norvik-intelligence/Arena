@@ -11,3 +11,5 @@ export const GameAction = z.object({
   issuedAt: z.number().int().nonnegative()
 });
 export type GameAction = z.infer<typeof GameAction>;
+
+export * from './events';
