@@ -1,16 +1,14 @@
 import {CAPACITY,initialSnapshot,step,type Input,type Member,type Mode,type Snapshot} from './match';
 type Lobby={mode:Mode;ownerToken:string;members:Member[];createdAt:number;snapshot:Snapshot};
-type Ticket={memberId:string;secret:string};
-type Client={memberId:string;socket:WebSocket};
 const validId=(x:string)=>/^[0-9a-f-]{36}$/i.test(x);
 const json=(body:unknown,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'no-store'}});
 export class MatchRoom implements DurableObject {
- private sockets=new Map<WebSocket,string>();private inputs:Record<string,Input>={};private timer:number|undefined;
+ private sockets=new Map<WebSocket,string>();private inputs:Record<string,Input>={};private timer:number|undefined;private ticking=false;
  constructor(private state:DurableObjectState){}
  private async getLobby(){return this.state.storage.get<Lobby>('lobby')}
  private broadcast(payload:unknown){const data=JSON.stringify(payload);for(const socket of this.sockets.keys())try{socket.send(data)}catch{this.sockets.delete(socket)}}
  private ensureTick(){if(this.timer!==undefined)return;this.timer=setInterval(()=>{void this.tick()},1000/30) as unknown as number}
- private async tick(){const lobby=await this.getLobby();if(!lobby||lobby.snapshot.phase!=='playing'){this.stopTick();return}lobby.snapshot=step(lobby.snapshot,this.inputs);await this.state.storage.put('lobby',lobby);this.broadcast({type:'snapshot',state:lobby.snapshot});if(lobby.snapshot.phase==='finished')this.stopTick()}
+ private async tick(){if(this.ticking)return;this.ticking=true;try{const lobby=await this.getLobby();if(!lobby||lobby.snapshot.phase!=='playing'){this.stopTick();return}lobby.snapshot=step(lobby.snapshot,this.inputs);await this.state.storage.put('lobby',lobby);this.broadcast({type:'snapshot',state:lobby.snapshot});if(lobby.snapshot.phase==='finished')this.stopTick()}finally{this.ticking=false}}
  private stopTick(){if(this.timer!==undefined){clearInterval(this.timer);this.timer=undefined}}
  async fetch(req:Request):Promise<Response>{
   const path=new URL(req.url).pathname;
@@ -46,7 +44,7 @@ export class MatchRoom implements DurableObject {
    if(extra.length||!memberId||!validId(memberId)||!secret)return json({error:'invalid_ticket'},401);
    const saved=await this.state.storage.get<string>('ticket:'+memberId);
    if(!saved||saved!==secret||!lobby.members.some(m=>m.id===memberId))return json({error:'unauthorized'},401);
-   const pair=new WebSocketPair();const client=pair[0],server=pair[1];server.accept();this.sockets.set(server,memberId);
+   const pair=new WebSocketPair();const client=pair[0],server=pair[1];server.accept();for(const [old,id] of this.sockets)if(id===memberId){old.close(1000,'Reconnected');this.sockets.delete(old)}this.sockets.set(server,memberId);
    server.addEventListener('message',event=>{if(typeof event.data!=='string'||event.data.length>300)return;try{
     const data=JSON.parse(event.data) as {type?:string;left?:unknown;right?:unknown;jump?:unknown};
     if(data.type==='input'&&typeof data.left==='boolean'&&typeof data.right==='boolean'&&typeof data.jump==='boolean')
