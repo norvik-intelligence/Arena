@@ -7,7 +7,7 @@ export class MatchRoom implements DurableObject {
  constructor(private state:DurableObjectState){}
  private async getLobby(){return this.state.storage.get<Lobby>('lobby')}
  private broadcast(payload:unknown){const data=JSON.stringify(payload);for(const socket of this.sockets.keys())try{socket.send(data)}catch{this.sockets.delete(socket)}}
- private ensureTick(){if(this.timer!==undefined)return;this.timer=setInterval(()=>{void this.tick()},1000/30) as unknown as number}
+ private ensureTick(){if(this.timer!==undefined)return;this.timer=setInterval(()=>{void this.tick().catch(()=>this.stopTick())},1000/30) as unknown as number}
  private async tick(){if(this.ticking)return;this.ticking=true;try{const lobby=await this.getLobby();if(!lobby||lobby.snapshot.phase!=='playing'){this.stopTick();return}lobby.snapshot=step(lobby.snapshot,this.inputs);await this.state.storage.put('lobby',lobby);this.broadcast({type:'snapshot',state:lobby.snapshot});if(lobby.snapshot.phase==='finished')this.stopTick()}finally{this.ticking=false}}
  private stopTick(){if(this.timer!==undefined){clearInterval(this.timer);this.timer=undefined}}
  async fetch(req:Request):Promise<Response>{
