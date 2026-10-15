@@ -28,5 +28,3 @@ app.get('/api/demo/lobbies/:id/ws', c=>{const id=c.req.param('id');if(!/^[a-f0-9
 app.all('/api/oauth/*', c=>c.json({error:'oauth_not_configured'},501));
 app.all('/api/webhooks/*', c=>c.json({error:'signature_verification_not_configured'},501));
 export default app;
-type Member={id:string;displayName:string;platform:'twitch'|'kick';joinedAt:number};
-type Lobby={id:string;mode:'duel'|'ffa3'|'ffa4'|'teams2v2';ownerToken:string;members:Member[];createdAt:number};
